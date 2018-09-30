@@ -82,7 +82,7 @@ function removePolyfilled(node: Element): void {
   node.parentNode.removeChild(node);
 }
 
-const PixiDomMap: Record<string, <T extends PIXI.DisplayObject>() => T> = {};
+const PixiDomMap: Record<string, () => PIXI.DisplayObject> = {};
 
 export const DOM = {
   pixi: {
@@ -91,13 +91,13 @@ export const DOM = {
         node.parent.removeChild(node);
       }
     },
-    map(tagName: string, ctor: (<T extends PIXI.DisplayObject = PIXI.DisplayObject>() => T)): void {
+    map(tagName: string, ctor: (() => PIXI.DisplayObject)): void {
       if (tagName in PixiDomMap) {
         throw new Error(`Pixi element with the same name "${tagName}" already exists`);
       }
       PixiDomMap[tagName] = ctor;
     },
-    createPixiElement<T extends PIXI.DisplayObject = PIXI.DisplayObject>(tagName: string): T {
+    createPixiElement(tagName: string): PIXI.DisplayObject {
       return PixiDomMap[tagName]();
     },
   },
