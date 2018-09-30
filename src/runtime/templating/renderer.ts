@@ -61,8 +61,9 @@ export class Renderer implements IRenderer {
     parts?: TemplatePartDefinitions
   ): void {
     const targetInstructions = definition.instructions;
+    // const pixiTargets: PIXI.DisplayObject[] = nodesToPixiElements(targets, host);
     const pixiTargets: PIXI.DisplayObject[] = Array.from(targets, node => node['$pixi']);
-
+    
     if (pixiTargets.length !== targetInstructions.length) {
       if (pixiTargets.length > targetInstructions.length) {
         throw Reporter.error(30);
@@ -134,7 +135,7 @@ export class Renderer implements IRenderer {
     ));
   }
 
-  public [TargetedInstructionType.listenerBinding](renderable: IRenderable, target: any, instruction: Immutable<IListenerBindingInstruction>): void {
+  public [TargetedInstructionType.listenerBinding](renderable: IRenderable, target: PIXI.DisplayObject, instruction: Immutable<IListenerBindingInstruction>): void {
     const srcOrExpr = instruction.srcOrExpr as any;
     renderable.$bindables.push(new Listener(
       instruction.dest,
@@ -274,4 +275,43 @@ export class Renderer implements IRenderer {
       ));
     }
   }
+}
+
+const enum NodeTypes {
+  ELEMENT = 1,
+  TEXT = 3,
+}
+
+function nodesToPixiElements(nodes: ArrayLike<INode>, parent: PIXI.Container = null): PIXI.DisplayObject[] {
+  const results: PIXI.DisplayObject[] = [];
+  for (let i = 0, ii = nodes.length; ii > i; ++i) {
+    const node = nodes[i];
+    let pixiElement: PIXI.DisplayObject | null = null;
+    switch ((node as Node).nodeType) {
+      case NodeTypes.ELEMENT:
+        pixiElement = DOM.pixi.createPixiElement((nodes[i] as Node).nodeName.toLowerCase());
+        break;
+      case NodeTypes.TEXT:
+        pixiElement = new PIXI.Text((node as Text).textContent);
+        break;
+    }
+    if (pixiElement === null) {
+      continue;
+    }
+    if (parent !== null) {
+      parent.addChild(pixiElement);
+    }
+    node['$pixi'] = pixiElement;
+    results[i] = pixiElement;
+    if (node.childNodes) {
+      if (pixiElement instanceof PIXI.Container) {
+        nodesToPixiElements(node.childNodes, pixiElement);
+      } else {
+        throw new Error(
+          `Invalid object model. ${(node as Node).nodeName.toLowerCase()} is not an instance of PIXI.Container. Cannot have childnodes`
+        );
+      }
+    }
+  }
+  return results;
 }

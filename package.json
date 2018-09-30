@@ -7,6 +7,7 @@
     "serve": "http-server -c-1 -p 9000 dist"
   },
   "dependencies": {
+    "@aurelia/debug": "^0.2.0-dev.20180928",
     "@aurelia/jit": "^0.2.0-dev.20180928",
     "@aurelia/kernel": "^0.2.0-dev.20180928",
     "@aurelia/plugin-svg": "dev",

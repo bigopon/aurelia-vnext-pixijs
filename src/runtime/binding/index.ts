@@ -1,4 +1,4 @@
-export * from './resources/index';
+// export * from './resources/index';
 
 export { ArrayObserver, enableArrayObservation, disableArrayObservation, nativePush, nativePop, nativeShift, nativeUnshift, nativeSplice, nativeReverse, nativeSort } from './array-observer'; // TODO: do this differently, not let this be ugly, etc, etc
 export * from './ast';

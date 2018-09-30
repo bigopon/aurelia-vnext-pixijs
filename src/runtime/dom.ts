@@ -37,6 +37,8 @@ export interface INodeSequence extends INodeLike {
    */
   findTargets(): ArrayLike<INode> | ReadonlyArray<INode>;
 
+  findPixiTargets(): ReadonlyArray<PIXI.DisplayObject>;
+
   /**
    * Insert this sequence as a sibling before refNode
    */
@@ -80,7 +82,7 @@ function removePolyfilled(node: Element): void {
   node.parentNode.removeChild(node);
 }
 
-const PixiDomMap: Record<string, { new <T extends PIXI.DisplayObject>(...args: any[]): T }> = {};
+const PixiDomMap: Record<string, <T extends PIXI.DisplayObject>() => T> = {};
 
 export const DOM = {
   pixi: {
@@ -89,14 +91,14 @@ export const DOM = {
         node.parent.removeChild(node);
       }
     },
-    map(tagName: string, ctor: { new <T extends PIXI.DisplayObject>(...args: any[]): T }): void {
+    map(tagName: string, ctor: (<T extends PIXI.DisplayObject = PIXI.DisplayObject>() => T)): void {
       if (tagName in PixiDomMap) {
         throw new Error(`Pixi element with the same name "${tagName}" already exists`);
       }
       PixiDomMap[tagName] = ctor;
     },
     createPixiElement<T extends PIXI.DisplayObject = PIXI.DisplayObject>(tagName: string): T {
-      return new PixiDomMap[tagName]();
+      return PixiDomMap[tagName]();
     },
   },
   createFactoryFromMarkupOrNode(markupOrNode: string | INode): () => INodeSequence {
@@ -272,6 +274,7 @@ const emptySequence: INodeSequence = {
   childNodes: PLATFORM.emptyArray,
   pixiNodes: PLATFORM.emptyArray,
   findTargets() { return PLATFORM.emptyArray; },
+  findPixiTargets() { return PLATFORM.emptyArray },
   insertBefore(refNode: PIXI.DisplayObject): void {},
   appendTo(parent: PIXI.Container): void {},
   remove(): void {}
@@ -307,6 +310,10 @@ export class FragmentNodeSequence implements INodeSequence {
     return this.fragment.querySelectorAll('.au');
   }
 
+  public findPixiTargets(): ReadonlyArray<PIXI.DisplayObject> {
+    return Array.from(this.findTargets(), node => node['$pixi']);
+  }
+
   public insertBefore(refNode: PIXI.DisplayObject): void {
     // refNode.parentNode.insertBefore(this.fragment, refNode);
     // refNode.parent.addChildAt(this.pixiNodes)
@@ -314,7 +321,9 @@ export class FragmentNodeSequence implements INodeSequence {
 
   public appendTo(parent: PIXI.Container): void {
     // parent.appendChild(this.fragment);
-    parent.addChild(...this.pixiNodes);
+    if (this.pixiNodes.length) {
+      parent.addChild(...this.pixiNodes);
+    }
   }
 
   public remove(): void {
@@ -347,15 +356,17 @@ const enum NodeTypes {
 }
 
 function nodesToPixiElements(nodes: Node[] | NodeListOf<Node>, parent: PIXI.Container = null): PIXI.DisplayObject[] {
-  const results: PIXI.DisplayObject[] = [];
+  const results = [];
   for (let i = 0, ii = nodes.length; ii > i; ++i) {
     const node = nodes[i];
     let pixiElement: PIXI.DisplayObject | null = null;
     switch (node.nodeType) {
       case NodeTypes.ELEMENT:
         pixiElement = DOM.pixi.createPixiElement(nodes[i].nodeName.toLowerCase());
+        break;
       case NodeTypes.TEXT:
         pixiElement = new PIXI.Text(node.textContent);
+        break;
     }
     if (pixiElement === null) {
       continue;
@@ -365,7 +376,7 @@ function nodesToPixiElements(nodes: Node[] | NodeListOf<Node>, parent: PIXI.Cont
     }
     node['$pixi'] = pixiElement;
     results[i] = pixiElement;
-    if (node.childNodes) {
+    if (node.childNodes.length > 0) {
       if (pixiElement instanceof PIXI.Container) {
         nodesToPixiElements(node.childNodes, pixiElement);
       } else {

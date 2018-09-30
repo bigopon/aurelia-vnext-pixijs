@@ -80,8 +80,9 @@ export class Aurelia {
 (<any>PLATFORM.global).Aurelia = Aurelia;
 
 export interface IPixiApp {
-  component: ICustomElement | { new(...args: any): ICustomElement };
+  component: ICustomElement | { new(...args: any[]): ICustomElement };
   host: Element;
+  pixi: PIXI.ApplicationOptions
 }
 
 export class AureliaPixi {
@@ -99,7 +100,7 @@ export class AureliaPixi {
   }
 
   public app(config: IPixiApp): this {
-    const app = this.createApplication();
+    const app = this['pixi'] = this.createApplication(config.pixi);
     const component: ICustomElement = typeof config.component === 'function'
       ? this.container.get(config.component)
       : config.component;

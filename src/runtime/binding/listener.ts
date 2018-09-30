@@ -17,13 +17,13 @@ export class Listener implements IBinding {
     public targetEvent: string,
     public delegationStrategy: DelegationStrategy,
     public sourceExpression: IExpression,
-    public target: INode,
+    public target: PIXI.DisplayObject,
     public preventDefault: boolean,
     private eventManager: IEventManager,
     public locator: IServiceLocator
   ) { }
 
-  public callSource(event: Event): any {
+  public callSource(event: PIXI.interaction.InteractionEvent): any {
     const overrideContext = this.source.overrideContext as any;
     overrideContext['$event'] = event;
 
@@ -31,14 +31,14 @@ export class Listener implements IBinding {
 
     delete overrideContext['$event'];
 
-    if (result !== true && this.preventDefault) {
-      event.preventDefault();
-    }
+    // if (result !== true && this.preventDefault) {
+    //   event.preventDefault();
+    // }
 
     return result;
   }
 
-  public handleEvent(event: Event): void {
+  public handleEvent = (event: PIXI.interaction.InteractionEvent): void => {
     this.callSource(event);
   }
 
@@ -58,12 +58,15 @@ export class Listener implements IBinding {
       this.sourceExpression.bind(flags, source, this);
     }
 
-    this.handler = this.eventManager.addEventListener(
-      this.target,
-      this.targetEvent,
-      this,
-      this.delegationStrategy
-    );
+    this.target.interactive = true;
+    this.target.addListener(this.targetEvent as PIXI.interaction.InteractionEventTypes, this.handleEvent);
+
+    // this.handler = this.eventManager.addEventListener(
+    //   this.target,
+    //   this.targetEvent,
+    //   this,
+    //   this.delegationStrategy
+    // );
   }
 
   public $unbind(flags: BindingFlags): void {
@@ -78,8 +81,9 @@ export class Listener implements IBinding {
     }
 
     this.source = null;
-    this.handler.dispose();
-    this.handler = null;
+    this.target.removeListener(this.targetEvent as PIXI.interaction.InteractionEventTypes, this.handleEvent);
+    // this.handler.dispose();
+    // this.handler = null;
   }
 
   // tslint:disable-next-line:no-empty
