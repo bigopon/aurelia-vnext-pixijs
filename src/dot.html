@@ -1,0 +1,17 @@
+<template css="
+  position: absolute;
+  font: normal 15px sans-serif;
+  textAlign: center;
+  cursor: pointer;
+  width: ${size}px;
+  height: ${size}px;
+  left: ${x}px;
+  top: ${y}px;
+  border-radius: ${size / 2}px;
+  line-height: ${size}px;
+  background: ${hover ? '#ff0' : '#61dafb'};
+  text-align: center;"
+  mouseenter.trigger='hover = true'
+  mouseleave.trigger='hover = false'
+  textcontent.bind="hover ? '*' + text + '*' : text">
+</template>
